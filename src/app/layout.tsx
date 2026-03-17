@@ -4,7 +4,7 @@ import AppShell from "@/components/AppShell";
 import { MyListProvider } from "@/context/MyListContext";
 
 export const metadata: Metadata = {
-  title: "Netflix Clone",
+  title: "Jayflix",
   description: "A Netflix-inspired streaming app built with Next.js",
   icons: {
     icon: "/favicon.svg",

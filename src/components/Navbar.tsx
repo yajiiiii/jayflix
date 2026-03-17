@@ -85,11 +85,11 @@ export default function Navbar() {
           <Link
             href="/"
             className="flex items-center transition hover:opacity-90"
-            aria-label="Netflix Home"
+            aria-label="Jayflix Home"
           >
             <Image
               src="/brand-logo.svg"
-              alt="Netflix"
+              alt="Jayflix"
               width={170}
               height={44}
               priority

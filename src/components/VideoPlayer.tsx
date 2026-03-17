@@ -394,7 +394,7 @@ export default function VideoPlayer({
       ref={playerRef}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="overflow-hidden rounded-[1.75rem] border border-white/10 bg-black shadow-[0_28px_70px_rgba(0,0,0,0.45)]"
+      className="overflow-hidden rounded-xl md:rounded-[1.75rem] border border-white/10 bg-black shadow-[0_28px_70px_rgba(0,0,0,0.45)]"
     >
       <div className="relative aspect-video bg-black">
         <AnimatePresence>
@@ -430,11 +430,12 @@ export default function VideoPlayer({
           key={`${src}:${reloadNonce}`}
           src={src}
           title={title}
-          className="absolute inset-0 h-full w-full"
+          className="absolute inset-0 h-full w-full touch-manipulation"
           allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
           onLoad={() => setIsLoading(false)}
           referrerPolicy="origin"
-          sandbox="allow-forms allow-presentation allow-same-origin allow-scripts"
+          sandbox="allow-forms allow-modals allow-presentation allow-same-origin allow-scripts"
+          style={{ WebkitOverflowScrolling: "touch" }}
         />
       </div>
     </motion.div>

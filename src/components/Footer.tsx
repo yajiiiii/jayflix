@@ -1,6 +1,6 @@
 "use client";
 
-import { FiFacebook, FiInstagram, FiTwitter } from "react-icons/fi";
+import { FiFacebook, FiGithub, FiInstagram, FiTwitter } from "react-icons/fi";
 
 export default function Footer() {
   return (
@@ -16,10 +16,13 @@ export default function Footer() {
           <a href="https://x.com/yajiwhat" target="_blank" rel="noopener noreferrer" className="transition hover:text-white" aria-label="Twitter">
             <FiTwitter size={22} />
           </a>
+          <a href="https://github.com/yajiiiii" target="_blank" rel="noopener noreferrer" className="transition hover:text-white" aria-label="GitHub">
+            <FiGithub size={22} />
+          </a>
         </div>
 
         <p className="text-xs text-white/45">
-          It&apos;s Netflix inspired built with Next.js, lebron james
+          &copy; 2026 Jayflix. All rights reserved. This site does not store any files on its server. created by yaji
         </p>
       </div>
     </footer>
