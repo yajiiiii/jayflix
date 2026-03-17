@@ -52,7 +52,7 @@ export default function HeroBanner({ items }: HeroBannerProps) {
       <section className="relative flex min-h-[70vh] items-end overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(229,9,20,0.28),_transparent_30%),linear-gradient(180deg,_#181818_0%,_#0b0b0b_100%)] px-4 pb-20 pt-28 md:px-12">
         <div className="max-w-2xl">
           <p className="mb-4 text-xs font-semibold uppercase tracking-[0.3em] text-white/70">
-            Netflix Tonight
+            Jayflix Tonight
           </p>
           <h1 className="max-w-xl text-4xl font-black text-white md:text-6xl">
             Your next watchlist is loading.

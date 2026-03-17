@@ -55,17 +55,17 @@ export default async function HomePage() {
 
       <div className="relative z-10 -mt-20 space-y-7 pb-6 pt-8 md:-mt-24 md:space-y-9 md:pt-12">
         <ContentRow
-          title="Top Movies This Week on Netflix Philippines"
+          title="Top Movies This Week"
           items={phTrendingMovies}
           isTopTen
         />
         <ContentRow
-          title="Top Shows This Week on Netflix Philippines"
+          title="Top Shows This Week"
           items={phTrendingTV}
           isTopTen
         />
-        <ContentRow title="Trending Today in the Philippines" items={todayTrending} />
-        <ContentRow title="Trending This Week in the Philippines" items={weekTrending} />
+        <ContentRow title="Trending Today" items={todayTrending} />
+        <ContentRow title="Trending This Week" items={weekTrending} />
         <ContentRow title="Filipino Favorites" items={filipino} />
         <ContentRow title="Award-Winning Movies" items={topRated} />
         <ContentRow title="Popular TV Shows" items={popularTV} />
