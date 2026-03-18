@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
@@ -87,12 +86,11 @@ export default function Navbar() {
             className="flex items-center transition hover:opacity-90"
             aria-label="Jayflix Home"
           >
-            <Image
-              src="/brand-logo.svg"
+            <img
+              src="/brand-logo.png?v=1"
               alt="Jayflix"
-              width={170}
-              height={44}
-              priority
+              width={218}
+              height={85}
               className="h-8 w-auto md:h-9"
             />
           </Link>
