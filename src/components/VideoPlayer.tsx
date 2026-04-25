@@ -39,24 +39,8 @@ interface VideoUrlOptions {
 
 const SOURCES: VideoSource[] = [
   {
-    name: "VidLink",
-    label: "Primary",
-    domain: "https://vidlink.pro",
-    supportsSubtitleLanguage: false,
-    buildMovieUrl: ({ tmdbId, imdbId }) => {
-      const id = tmdbId ? String(tmdbId) : imdbId || "";
-      return id ? `https://vidlink.pro/movie/${id}?autoplay=true` : "";
-    },
-    buildTvUrl: ({ tmdbId, imdbId, season, episode }) => {
-      const id = tmdbId ? String(tmdbId) : imdbId || "";
-      return id
-        ? `https://vidlink.pro/tv/${id}/${season || 1}/${episode || 1}?autoplay=true`
-        : "";
-    },
-  },
-  {
     name: "VidSrc.to",
-    label: "Subtitles",
+    label: "Primary",
     domain: "https://vidsrc.to",
     supportsSubtitleLanguage: true,
     buildMovieUrl: ({ imdbId, tmdbId, subtitleLanguage, preferTmdb }) => {
@@ -98,6 +82,28 @@ const SOURCES: VideoSource[] = [
       return `https://vidsrc.to/embed/tv/${id}/${season || 1}/${episode || 1}${
         query ? `?${query}` : ""
       }`;
+    },
+  },
+  {
+    name: "MoviesAPI",
+    label: "Subtitles",
+    domain: "https://moviesapi.club",
+    supportsSubtitleLanguage: false,
+    buildMovieUrl: ({ tmdbId, imdbId, preferTmdb }) => {
+      const id =
+        preferTmdb && tmdbId
+          ? String(tmdbId)
+          : imdbId || (tmdbId ? String(tmdbId) : "");
+      return id ? `https://moviesapi.club/movie/${id}` : "";
+    },
+    buildTvUrl: ({ tmdbId, imdbId, season, episode, preferTmdb }) => {
+      const id =
+        preferTmdb && tmdbId
+          ? String(tmdbId)
+          : imdbId || (tmdbId ? String(tmdbId) : "");
+      return id
+        ? `https://moviesapi.club/tv/${id}-${season || 1}-${episode || 1}`
+        : "";
     },
   },
   {
