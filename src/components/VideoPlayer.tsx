@@ -538,7 +538,6 @@ export default function VideoPlayer({
           allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
           onLoad={() => setIsLoading(false)}
           referrerPolicy="origin"
-          sandbox="allow-forms allow-modals allow-presentation allow-same-origin allow-scripts"
           style={{ WebkitOverflowScrolling: "touch" }}
         />
       </div>
