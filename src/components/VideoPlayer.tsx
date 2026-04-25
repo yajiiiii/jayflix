@@ -39,50 +39,19 @@ interface VideoUrlOptions {
 
 const SOURCES: VideoSource[] = [
   {
-    name: "VidSrc",
+    name: "VidLink",
     label: "Primary",
-    domain: "https://vidsrc.xyz",
-    supportsSubtitleLanguage: true,
-    buildMovieUrl: ({ imdbId, tmdbId, subtitleLanguage, preferTmdb }) => {
-      const params = new URLSearchParams();
-
-      if (preferTmdb && tmdbId) {
-        params.set("tmdb", String(tmdbId));
-      } else if (imdbId) {
-        params.set("imdb", imdbId);
-      } else if (tmdbId) {
-        params.set("tmdb", String(tmdbId));
-      } else {
-        return "";
-      }
-
-      if (subtitleLanguage !== "auto") {
-        params.set("ds_lang", subtitleLanguage);
-      }
-
-      return `https://vidsrc.xyz/embed/movie?${params.toString()}`;
+    domain: "https://vidlink.pro",
+    supportsSubtitleLanguage: false,
+    buildMovieUrl: ({ tmdbId, imdbId }) => {
+      const id = tmdbId ? String(tmdbId) : imdbId || "";
+      return id ? `https://vidlink.pro/movie/${id}?autoplay=true` : "";
     },
-    buildTvUrl: ({ imdbId, tmdbId, season, episode, subtitleLanguage, preferTmdb }) => {
-      const params = new URLSearchParams();
-
-      if (preferTmdb && tmdbId) {
-        params.set("tmdb", String(tmdbId));
-      } else if (imdbId) {
-        params.set("imdb", imdbId);
-      } else if (tmdbId) {
-        params.set("tmdb", String(tmdbId));
-      } else {
-        return "";
-      }
-
-      params.set("season", String(season || 1));
-      params.set("episode", String(episode || 1));
-
-      if (subtitleLanguage !== "auto") {
-        params.set("ds_lang", subtitleLanguage);
-      }
-
-      return `https://vidsrc.xyz/embed/tv?${params.toString()}`;
+    buildTvUrl: ({ tmdbId, imdbId, season, episode }) => {
+      const id = tmdbId ? String(tmdbId) : imdbId || "";
+      return id
+        ? `https://vidlink.pro/tv/${id}/${season || 1}/${episode || 1}?autoplay=true`
+        : "";
     },
   },
   {
@@ -132,19 +101,50 @@ const SOURCES: VideoSource[] = [
     },
   },
   {
-    name: "VidLink",
+    name: "VidSrc",
     label: "Fast",
-    domain: "https://vidlink.pro",
-    supportsSubtitleLanguage: false,
-    buildMovieUrl: ({ tmdbId, imdbId }) => {
-      const id = tmdbId ? String(tmdbId) : imdbId || "";
-      return id ? `https://vidlink.pro/movie/${id}?autoplay=true` : "";
+    domain: "https://vidsrc.xyz",
+    supportsSubtitleLanguage: true,
+    buildMovieUrl: ({ imdbId, tmdbId, subtitleLanguage, preferTmdb }) => {
+      const params = new URLSearchParams();
+
+      if (preferTmdb && tmdbId) {
+        params.set("tmdb", String(tmdbId));
+      } else if (imdbId) {
+        params.set("imdb", imdbId);
+      } else if (tmdbId) {
+        params.set("tmdb", String(tmdbId));
+      } else {
+        return "";
+      }
+
+      if (subtitleLanguage !== "auto") {
+        params.set("ds_lang", subtitleLanguage);
+      }
+
+      return `https://vidsrc.xyz/embed/movie?${params.toString()}`;
     },
-    buildTvUrl: ({ tmdbId, imdbId, season, episode }) => {
-      const id = tmdbId ? String(tmdbId) : imdbId || "";
-      return id
-        ? `https://vidlink.pro/tv/${id}/${season || 1}/${episode || 1}?autoplay=true`
-        : "";
+    buildTvUrl: ({ imdbId, tmdbId, season, episode, subtitleLanguage, preferTmdb }) => {
+      const params = new URLSearchParams();
+
+      if (preferTmdb && tmdbId) {
+        params.set("tmdb", String(tmdbId));
+      } else if (imdbId) {
+        params.set("imdb", imdbId);
+      } else if (tmdbId) {
+        params.set("tmdb", String(tmdbId));
+      } else {
+        return "";
+      }
+
+      params.set("season", String(season || 1));
+      params.set("episode", String(episode || 1));
+
+      if (subtitleLanguage !== "auto") {
+        params.set("ds_lang", subtitleLanguage);
+      }
+
+      return `https://vidsrc.xyz/embed/tv?${params.toString()}`;
     },
   },
   {
