@@ -39,159 +39,134 @@ interface VideoUrlOptions {
 
 const SOURCES: VideoSource[] = [
   {
-    name: "VidSrc CC",
+    name: "VidSrc",
     label: "Primary",
-    domain: "https://vidsrc.cc",
-    supportsSubtitleLanguage: false,
-    buildMovieUrl: ({ imdbId, tmdbId, preferTmdb }) =>
-      preferTmdb && tmdbId
-        ? `https://vidsrc.cc/v3/embed/movie/${tmdbId}?autoPlay=true&poster=false`
-        : imdbId
-          ? `https://vidsrc.cc/v3/embed/movie/${imdbId}?autoPlay=true&poster=false`
-          : tmdbId
-            ? `https://vidsrc.cc/v3/embed/movie/${tmdbId}?autoPlay=true&poster=false`
-            : "",
-    buildTvUrl: ({ imdbId, season, episode }) =>
-      imdbId
-        ? `https://vidsrc.cc/v3/embed/tv/${imdbId}/${season || 1}/${episode || 1}?autoPlay=true&poster=false`
-        : "",
+    domain: "https://vidsrc.xyz",
+    supportsSubtitleLanguage: true,
+    buildMovieUrl: ({ imdbId, tmdbId, subtitleLanguage, preferTmdb }) => {
+      const params = new URLSearchParams();
+
+      if (preferTmdb && tmdbId) {
+        params.set("tmdb", String(tmdbId));
+      } else if (imdbId) {
+        params.set("imdb", imdbId);
+      } else if (tmdbId) {
+        params.set("tmdb", String(tmdbId));
+      } else {
+        return "";
+      }
+
+      if (subtitleLanguage !== "auto") {
+        params.set("ds_lang", subtitleLanguage);
+      }
+
+      return `https://vidsrc.xyz/embed/movie?${params.toString()}`;
+    },
+    buildTvUrl: ({ imdbId, tmdbId, season, episode, subtitleLanguage, preferTmdb }) => {
+      const params = new URLSearchParams();
+
+      if (preferTmdb && tmdbId) {
+        params.set("tmdb", String(tmdbId));
+      } else if (imdbId) {
+        params.set("imdb", imdbId);
+      } else if (tmdbId) {
+        params.set("tmdb", String(tmdbId));
+      } else {
+        return "";
+      }
+
+      params.set("season", String(season || 1));
+      params.set("episode", String(episode || 1));
+
+      if (subtitleLanguage !== "auto") {
+        params.set("ds_lang", subtitleLanguage);
+      }
+
+      return `https://vidsrc.xyz/embed/tv?${params.toString()}`;
+    },
   },
   {
-    name: "VidSrc Embed",
+    name: "VidSrc.to",
     label: "Subtitles",
-    domain: "https://vidsrc-embed.su",
+    domain: "https://vidsrc.to",
     supportsSubtitleLanguage: true,
     buildMovieUrl: ({ imdbId, tmdbId, subtitleLanguage, preferTmdb }) => {
+      const id =
+        preferTmdb && tmdbId
+          ? String(tmdbId)
+          : imdbId || (tmdbId ? String(tmdbId) : "");
+
+      if (!id) {
+        return "";
+      }
+
       const params = new URLSearchParams();
 
-      if (preferTmdb && tmdbId) {
-        params.set("tmdb", String(tmdbId));
-      } else if (imdbId) {
-        params.set("imdb", imdbId);
-      } else if (tmdbId) {
-        params.set("tmdb", String(tmdbId));
-      } else {
-        return "";
-      }
-
-      params.set("autoplay", "1");
-
       if (subtitleLanguage !== "auto") {
         params.set("ds_lang", subtitleLanguage);
       }
 
-      return `https://vidsrc-embed.su/embed/movie?${params.toString()}`;
+      const query = params.toString();
+      return `https://vidsrc.to/embed/movie/${id}${query ? `?${query}` : ""}`;
     },
-    buildTvUrl: ({ imdbId, season, episode, subtitleLanguage }) => {
-      if (!imdbId) {
+    buildTvUrl: ({ imdbId, tmdbId, season, episode, subtitleLanguage, preferTmdb }) => {
+      const id =
+        preferTmdb && tmdbId
+          ? String(tmdbId)
+          : imdbId || (tmdbId ? String(tmdbId) : "");
+
+      if (!id) {
         return "";
       }
 
-      const params = new URLSearchParams({
-        imdb: imdbId,
-        season: String(season || 1),
-        episode: String(episode || 1),
-        autoplay: "1",
-        autonext: "1",
-      });
+      const params = new URLSearchParams();
 
       if (subtitleLanguage !== "auto") {
         params.set("ds_lang", subtitleLanguage);
       }
 
-      return `https://vidsrc-embed.su/embed/tv?${params.toString()}`;
+      const query = params.toString();
+      return `https://vidsrc.to/embed/tv/${id}/${season || 1}/${episode || 1}${
+        query ? `?${query}` : ""
+      }`;
     },
   },
   {
-    name: "Vsrc",
+    name: "VidLink",
     label: "Fast",
-    domain: "https://vsrc.su",
-    supportsSubtitleLanguage: true,
-    buildMovieUrl: ({ imdbId, tmdbId, subtitleLanguage, preferTmdb }) => {
-      const params = new URLSearchParams();
-
-      if (preferTmdb && tmdbId) {
-        params.set("tmdb", String(tmdbId));
-      } else if (imdbId) {
-        params.set("imdb", imdbId);
-      } else if (tmdbId) {
-        params.set("tmdb", String(tmdbId));
-      } else {
-        return "";
-      }
-
-      params.set("autoplay", "1");
-
-      if (subtitleLanguage !== "auto") {
-        params.set("ds_lang", subtitleLanguage);
-      }
-
-      return `https://vsrc.su/embed/movie?${params.toString()}`;
+    domain: "https://vidlink.pro",
+    supportsSubtitleLanguage: false,
+    buildMovieUrl: ({ tmdbId, imdbId }) => {
+      const id = tmdbId ? String(tmdbId) : imdbId || "";
+      return id ? `https://vidlink.pro/movie/${id}?autoplay=true` : "";
     },
-    buildTvUrl: ({ imdbId, season, episode, subtitleLanguage }) => {
-      if (!imdbId) {
-        return "";
-      }
-
-      const params = new URLSearchParams({
-        imdb: imdbId,
-        season: String(season || 1),
-        episode: String(episode || 1),
-        autoplay: "1",
-        autonext: "1",
-      });
-
-      if (subtitleLanguage !== "auto") {
-        params.set("ds_lang", subtitleLanguage);
-      }
-
-      return `https://vsrc.su/embed/tv?${params.toString()}`;
+    buildTvUrl: ({ tmdbId, imdbId, season, episode }) => {
+      const id = tmdbId ? String(tmdbId) : imdbId || "";
+      return id
+        ? `https://vidlink.pro/tv/${id}/${season || 1}/${episode || 1}?autoplay=true`
+        : "";
     },
   },
   {
-    name: "VidSrc Mirror",
+    name: "111Movies",
     label: "Backup",
-    domain: "https://vidsrcme.su",
-    supportsSubtitleLanguage: true,
-    buildMovieUrl: ({ imdbId, tmdbId, subtitleLanguage, preferTmdb }) => {
-      const params = new URLSearchParams();
-
-      if (preferTmdb && tmdbId) {
-        params.set("tmdb", String(tmdbId));
-      } else if (imdbId) {
-        params.set("imdb", imdbId);
-      } else if (tmdbId) {
-        params.set("tmdb", String(tmdbId));
-      } else {
-        return "";
-      }
-
-      params.set("autoplay", "1");
-
-      if (subtitleLanguage !== "auto") {
-        params.set("ds_lang", subtitleLanguage);
-      }
-
-      return `https://vidsrcme.su/embed/movie?${params.toString()}`;
+    domain: "https://111movies.com",
+    supportsSubtitleLanguage: false,
+    buildMovieUrl: ({ tmdbId, imdbId, preferTmdb }) => {
+      const id =
+        preferTmdb && tmdbId
+          ? String(tmdbId)
+          : imdbId || (tmdbId ? String(tmdbId) : "");
+      return id ? `https://111movies.com/movie/${id}` : "";
     },
-    buildTvUrl: ({ imdbId, season, episode, subtitleLanguage }) => {
-      if (!imdbId) {
-        return "";
-      }
-
-      const params = new URLSearchParams({
-        imdb: imdbId,
-        season: String(season || 1),
-        episode: String(episode || 1),
-        autoplay: "1",
-        autonext: "1",
-      });
-
-      if (subtitleLanguage !== "auto") {
-        params.set("ds_lang", subtitleLanguage);
-      }
-
-      return `https://vidsrcme.su/embed/tv?${params.toString()}`;
+    buildTvUrl: ({ tmdbId, imdbId, season, episode, preferTmdb }) => {
+      const id =
+        preferTmdb && tmdbId
+          ? String(tmdbId)
+          : imdbId || (tmdbId ? String(tmdbId) : "");
+      return id
+        ? `https://111movies.com/tv/${id}/${season || 1}/${episode || 1}`
+        : "";
     },
   },
 ];
@@ -212,14 +187,9 @@ const IFRAME_ALLOW =
   "autoplay; fullscreen; encrypted-media; picture-in-picture; clipboard-write";
 const IFRAME_SANDBOX = [
   "allow-forms",
-  "allow-modals",
-  "allow-popups",
-  "allow-popups-to-escape-sandbox",
-  "allow-presentation",
   "allow-same-origin",
   "allow-scripts",
-  "allow-storage-access-by-user-activation",
-  "allow-top-navigation-by-user-activation",
+  "allow-presentation",
 ].join(" ");
 
 function buildPlayerUrl(
