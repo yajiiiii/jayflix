@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 interface VideoSource {
@@ -206,6 +206,7 @@ const SUBTITLE_OPTIONS: SubtitleOption[] = [
 
 const PLAYER_SUBTITLE_KEY = "netflix-clone-player-subtitle";
 const DEFAULT_SOURCE_INDEX = 0;
+const PLAYER_LOAD_TIMEOUT_MS = 10000;
 
 function buildPlayerUrl(
   source: VideoSource,
@@ -289,13 +290,25 @@ export default function VideoPlayer({
     setIsLoading(true);
   }, [reloadNonce, src]);
 
-  const switchSource = (index: number) => {
+  const switchSource = useCallback((index: number) => {
     setSourceIndex(index);
-  };
+  }, []);
 
-  const tryNextSource = () => {
-    switchSource((sourceIndex + 1) % SOURCES.length);
-  };
+  const tryNextSource = useCallback(() => {
+    setSourceIndex((index) => (index + 1) % SOURCES.length);
+  }, []);
+
+  useEffect(() => {
+    if (!isLoading) {
+      return undefined;
+    }
+
+    const timer = window.setTimeout(() => {
+      tryNextSource();
+    }, PLAYER_LOAD_TIMEOUT_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [isLoading, src, tryNextSource]);
 
   const tryPreviousSource = () => {
     switchSource((sourceIndex - 1 + SOURCES.length) % SOURCES.length);
@@ -414,13 +427,26 @@ export default function VideoPlayer({
                     </p>
                   ) : null}
                 </div>
-                <button
-                  type="button"
-                  onClick={tryNextSource}
-                  className="text-xs text-netflix-light-gray underline transition hover:text-white"
-                >
-                  Stream not responding? Switch source
-                </button>
+                <p className="text-xs text-netflix-light-gray">
+                  Stream not responding? Try a different source:
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-1.5">
+                  {SOURCES.map((source, index) => (
+                    <button
+                      key={source.name}
+                      type="button"
+                      onClick={() => switchSource(index)}
+                      aria-pressed={sourceIndex === index}
+                      className={`rounded-full px-3 py-1.5 text-[11px] font-semibold transition ${
+                        sourceIndex === index
+                          ? "bg-white text-black"
+                          : "border border-white/15 bg-white/8 text-white/80 hover:bg-white/16 hover:text-white"
+                      }`}
+                    >
+                      {source.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             </motion.div>
           ) : null}
