@@ -38,8 +38,86 @@ interface VideoUrlOptions {
 
 const SOURCES: VideoSource[] = [
   {
+    name: "VidSrc",
+    label: "Server 1",
+    domain: "https://vidsrc.xyz",
+    supportsSubtitleLanguage: true,
+    buildMovieUrl: ({ imdbId, tmdbId, subtitleLanguage, preferTmdb }) => {
+      const params = new URLSearchParams();
+      if (preferTmdb && tmdbId) params.set("tmdb", String(tmdbId));
+      else if (imdbId) params.set("imdb", imdbId);
+      else if (tmdbId) params.set("tmdb", String(tmdbId));
+      else return "";
+      if (subtitleLanguage !== "auto") params.set("ds_lang", subtitleLanguage);
+      return `https://vidsrc.xyz/embed/movie?${params.toString()}`;
+    },
+    buildTvUrl: ({ imdbId, tmdbId, season, episode, subtitleLanguage, preferTmdb }) => {
+      const params = new URLSearchParams();
+      if (preferTmdb && tmdbId) params.set("tmdb", String(tmdbId));
+      else if (imdbId) params.set("imdb", imdbId);
+      else if (tmdbId) params.set("tmdb", String(tmdbId));
+      else return "";
+      params.set("season", String(season || 1));
+      params.set("episode", String(episode || 1));
+      if (subtitleLanguage !== "auto") params.set("ds_lang", subtitleLanguage);
+      return `https://vidsrc.xyz/embed/tv?${params.toString()}`;
+    },
+  },
+  {
+    name: "VidSrc.to",
+    label: "Server 2",
+    domain: "https://vidsrc.to",
+    supportsSubtitleLanguage: true,
+    buildMovieUrl: ({ imdbId, tmdbId, subtitleLanguage, preferTmdb }) => {
+      const id =
+        preferTmdb && tmdbId
+          ? String(tmdbId)
+          : imdbId || (tmdbId ? String(tmdbId) : "");
+      if (!id) return "";
+      const params = new URLSearchParams();
+      if (subtitleLanguage !== "auto") params.set("ds_lang", subtitleLanguage);
+      const query = params.toString();
+      return `https://vidsrc.to/embed/movie/${id}${query ? `?${query}` : ""}`;
+    },
+    buildTvUrl: ({ imdbId, tmdbId, season, episode, subtitleLanguage, preferTmdb }) => {
+      const id =
+        preferTmdb && tmdbId
+          ? String(tmdbId)
+          : imdbId || (tmdbId ? String(tmdbId) : "");
+      if (!id) return "";
+      const params = new URLSearchParams();
+      if (subtitleLanguage !== "auto") params.set("ds_lang", subtitleLanguage);
+      const query = params.toString();
+      return `https://vidsrc.to/embed/tv/${id}/${season || 1}/${episode || 1}${
+        query ? `?${query}` : ""
+      }`;
+    },
+  },
+  {
+    name: "111Movies",
+    label: "Server 3",
+    domain: "https://111movies.com",
+    supportsSubtitleLanguage: false,
+    buildMovieUrl: ({ tmdbId, imdbId, preferTmdb }) => {
+      const id =
+        preferTmdb && tmdbId
+          ? String(tmdbId)
+          : imdbId || (tmdbId ? String(tmdbId) : "");
+      return id ? `https://111movies.com/movie/${id}` : "";
+    },
+    buildTvUrl: ({ tmdbId, imdbId, season, episode, preferTmdb }) => {
+      const id =
+        preferTmdb && tmdbId
+          ? String(tmdbId)
+          : imdbId || (tmdbId ? String(tmdbId) : "");
+      return id
+        ? `https://111movies.com/tv/${id}/${season || 1}/${episode || 1}`
+        : "";
+    },
+  },
+  {
     name: "VidSrc CC",
-    label: "Primary",
+    label: "Server 4",
     domain: "https://vidsrc.cc",
     supportsSubtitleLanguage: false,
     buildMovieUrl: ({ imdbId, tmdbId, preferTmdb }) =>
@@ -57,7 +135,7 @@ const SOURCES: VideoSource[] = [
   },
   {
     name: "VidSrc Embed",
-    label: "Subtitles",
+    label: "Server 5",
     domain: "https://vidsrc-embed.su",
     supportsSubtitleLanguage: true,
     buildMovieUrl: ({ imdbId, tmdbId, subtitleLanguage, preferTmdb }) => {
@@ -103,7 +181,7 @@ const SOURCES: VideoSource[] = [
   },
   {
     name: "Vsrc",
-    label: "Fast",
+    label: "Server 6",
     domain: "https://vsrc.su",
     supportsSubtitleLanguage: true,
     buildMovieUrl: ({ imdbId, tmdbId, subtitleLanguage, preferTmdb }) => {
@@ -149,7 +227,7 @@ const SOURCES: VideoSource[] = [
   },
   {
     name: "VidSrc Mirror",
-    label: "Backup",
+    label: "Server 7",
     domain: "https://vidsrcme.su",
     supportsSubtitleLanguage: true,
     buildMovieUrl: ({ imdbId, tmdbId, subtitleLanguage, preferTmdb }) => {
