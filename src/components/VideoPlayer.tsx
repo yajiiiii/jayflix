@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { FiMaximize2, FiRefreshCw } from "react-icons/fi";
 
 interface VideoSource {
   buildMovieUrl: (options: VideoUrlOptions) => string;
@@ -206,6 +207,20 @@ const SUBTITLE_OPTIONS: SubtitleOption[] = [
 
 const PLAYER_SUBTITLE_KEY = "netflix-clone-player-subtitle";
 const DEFAULT_SOURCE_INDEX = 0;
+const PLAYER_LOAD_TIMEOUT_MS = 14000;
+const IFRAME_ALLOW =
+  "autoplay; fullscreen; encrypted-media; picture-in-picture; clipboard-write";
+const IFRAME_SANDBOX = [
+  "allow-forms",
+  "allow-modals",
+  "allow-popups",
+  "allow-popups-to-escape-sandbox",
+  "allow-presentation",
+  "allow-same-origin",
+  "allow-scripts",
+  "allow-storage-access-by-user-activation",
+  "allow-top-navigation-by-user-activation",
+].join(" ");
 
 function buildPlayerUrl(
   source: VideoSource,
@@ -240,11 +255,22 @@ export default function VideoPlayer({
   preferTmdb = false,
   title,
 }: VideoPlayerProps) {
-  const [isLoading, setIsLoading] = useState(true);
+  const [loadedFrameKey, setLoadedFrameKey] = useState<string | null>(null);
+  const [loadIssue, setLoadIssue] = useState(false);
   const [reloadNonce, setReloadNonce] = useState(0);
   const [sourceIndex, setSourceIndex] = useState(DEFAULT_SOURCE_INDEX);
   const [subtitleLanguage, setSubtitleLanguage] = useState("auto");
   const playerRef = useRef<HTMLDivElement>(null);
+  const loadTimeoutRef = useRef<number | null>(null);
+
+  const clearLoadTimeout = useCallback(() => {
+    if (loadTimeoutRef.current === null) {
+      return;
+    }
+
+    window.clearTimeout(loadTimeoutRef.current);
+    loadTimeoutRef.current = null;
+  }, []);
 
   useEffect(() => {
     const savedSubtitle = window.localStorage.getItem(PLAYER_SUBTITLE_KEY);
@@ -284,21 +310,34 @@ export default function VideoPlayer({
       }),
     [currentSource, episode, imdbId, preferTmdb, season, subtitleLanguage, tmdbId, type]
   );
+  const frameKey = `${src}:${reloadNonce}`;
+  const isLoading = loadedFrameKey !== frameKey;
 
   useEffect(() => {
-    setIsLoading(true);
-  }, [reloadNonce, src]);
+    clearLoadTimeout();
+    setLoadIssue(false);
+
+    if (loadedFrameKey === frameKey) {
+      return undefined;
+    }
+
+    loadTimeoutRef.current = window.setTimeout(() => {
+      setLoadIssue(true);
+    }, PLAYER_LOAD_TIMEOUT_MS);
+
+    return clearLoadTimeout;
+  }, [clearLoadTimeout, frameKey, loadedFrameKey]);
 
   const switchSource = (index: number) => {
     setSourceIndex(index);
   };
 
   const tryNextSource = () => {
-    switchSource((sourceIndex + 1) % SOURCES.length);
+    setSourceIndex((index) => (index + 1) % SOURCES.length);
   };
 
   const tryPreviousSource = () => {
-    switchSource((sourceIndex - 1 + SOURCES.length) % SOURCES.length);
+    setSourceIndex((index) => (index - 1 + SOURCES.length) % SOURCES.length);
   };
 
   const cycleSubtitleLanguage = () => {
@@ -315,7 +354,7 @@ export default function VideoPlayer({
   };
 
   const reloadSource = () => {
-    setIsLoading(true);
+    setLoadIssue(false);
     setReloadNonce((value) => value + 1);
   };
 
@@ -330,6 +369,18 @@ export default function VideoPlayer({
     }
 
     await playerRef.current.requestFullscreen();
+  };
+
+  const handleIframeLoad = () => {
+    clearLoadTimeout();
+    setLoadIssue(false);
+    setLoadedFrameKey(frameKey);
+  };
+
+  const handleIframeError = () => {
+    clearLoadTimeout();
+    setLoadIssue(true);
+    setLoadedFrameKey(null);
   };
 
   useEffect(() => {
@@ -396,9 +447,9 @@ export default function VideoPlayer({
       animate={{ opacity: 1 }}
       className="overflow-hidden rounded-xl md:rounded-[1.75rem] border border-white/10 bg-black shadow-[0_28px_70px_rgba(0,0,0,0.45)]"
     >
-      <div className="relative aspect-video bg-black">
+      <div className="group/player relative aspect-video bg-black">
         <AnimatePresence>
-          {isLoading ? (
+          {isLoading && !loadIssue ? (
             <motion.div
               initial={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -414,29 +465,99 @@ export default function VideoPlayer({
                     </p>
                   ) : null}
                 </div>
-                <button
-                  type="button"
-                  onClick={tryNextSource}
-                  className="text-xs text-netflix-light-gray underline transition hover:text-white"
-                >
-                  Stream not responding? Switch source
-                </button>
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  <button
+                    type="button"
+                    onClick={tryNextSource}
+                    className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs text-white transition hover:bg-white/18"
+                  >
+                    Switch source
+                  </button>
+                  <button
+                    type="button"
+                    onClick={reloadSource}
+                    className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs text-white transition hover:bg-white/18"
+                  >
+                    Reload
+                  </button>
+                </div>
               </div>
             </motion.div>
           ) : null}
         </AnimatePresence>
 
         <iframe
-          key={`${src}:${reloadNonce}`}
+          key={frameKey}
           src={src}
           title={title}
           className="absolute inset-0 h-full w-full touch-manipulation"
-          allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
-          onLoad={() => setIsLoading(false)}
+          allow={IFRAME_ALLOW}
+          onLoad={handleIframeLoad}
+          onError={handleIframeError}
           referrerPolicy="origin"
-          sandbox="allow-forms allow-modals allow-presentation allow-same-origin allow-scripts"
+          sandbox={IFRAME_SANDBOX}
           style={{ WebkitOverflowScrolling: "touch" }}
         />
+
+        {!isLoading || loadIssue ? (
+          <div
+            className={`pointer-events-none absolute inset-x-0 bottom-0 z-10 flex flex-wrap items-center justify-between gap-3 bg-gradient-to-t from-black/80 via-black/35 to-transparent p-3 transition focus-within:opacity-100 group-hover/player:opacity-100 ${
+              loadIssue ? "opacity-100" : "opacity-0"
+            }`}
+          >
+            <div className="pointer-events-auto flex max-w-full flex-wrap items-center gap-1 rounded-full border border-white/12 bg-black/62 p-1 backdrop-blur">
+              {loadIssue ? (
+                <span className="px-3 py-1.5 text-[11px] font-semibold text-white/72">
+                  Source slow
+                </span>
+              ) : null}
+              {SOURCES.map((source, index) => (
+                <button
+                  key={source.name}
+                  type="button"
+                  onClick={() => switchSource(index)}
+                  aria-pressed={sourceIndex === index}
+                  className={`rounded-full px-3 py-1.5 text-[11px] font-semibold transition ${
+                    sourceIndex === index
+                      ? "bg-white text-black"
+                      : "text-white/72 hover:bg-white/12 hover:text-white"
+                  }`}
+                >
+                  {source.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="pointer-events-auto flex items-center gap-2">
+              {currentSource.supportsSubtitleLanguage ? (
+                <button
+                  type="button"
+                  onClick={cycleSubtitleLanguage}
+                  className="rounded-full border border-white/12 bg-black/62 px-3 py-2 text-[11px] font-semibold text-white backdrop-blur transition hover:bg-white/12"
+                  aria-label={`Subtitle language: ${selectedSubtitle.label}`}
+                >
+                  CC {selectedSubtitle.label}
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={reloadSource}
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/12 bg-black/62 text-white backdrop-blur transition hover:bg-white/12"
+                aria-label="Reload source"
+              >
+                <FiRefreshCw size={15} />
+              </button>
+              <button
+                type="button"
+                onClick={() => void toggleFullscreen()}
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/12 bg-black/62 text-white backdrop-blur transition hover:bg-white/12"
+                aria-label="Fullscreen"
+              >
+                <FiMaximize2 size={15} />
+              </button>
+            </div>
+          </div>
+        ) : null}
       </div>
     </motion.div>
   );
