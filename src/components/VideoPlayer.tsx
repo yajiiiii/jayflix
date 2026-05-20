@@ -3,11 +3,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  FiChevronLeft,
-  FiChevronRight,
   FiMaximize2,
   FiMinimize2,
   FiRefreshCw,
+  FiSettings,
   FiType,
 } from "react-icons/fi";
 
@@ -104,22 +103,16 @@ const SOURCES: VideoSource[] = [
   {
     name: "111Movies",
     label: "Server 1",
-    domain: "https://111movies.com",
+    domain: "https://111movies.net",
     supportsSubtitleLanguage: false,
-    buildMovieUrl: ({ tmdbId, imdbId, preferTmdb }) => {
-      const id =
-        preferTmdb && tmdbId
-          ? String(tmdbId)
-          : imdbId || (tmdbId ? String(tmdbId) : "");
-      return id ? `https://111movies.com/movie/${id}` : "";
+    buildMovieUrl: ({ tmdbId, imdbId }) => {
+      const id = tmdbId ? String(tmdbId) : imdbId;
+      return id ? `https://111movies.net/movie/${id}` : "";
     },
-    buildTvUrl: ({ tmdbId, imdbId, season, episode, preferTmdb }) => {
-      const id =
-        preferTmdb && tmdbId
-          ? String(tmdbId)
-          : imdbId || (tmdbId ? String(tmdbId) : "");
+    buildTvUrl: ({ tmdbId, imdbId, season, episode }) => {
+      const id = tmdbId ? String(tmdbId) : imdbId;
       return id
-        ? `https://111movies.com/tv/${id}/${season || 1}/${episode || 1}`
+        ? `https://111movies.net/tv/${id}/${season || 1}/${episode || 1}`
         : "";
     },
   },
@@ -370,6 +363,7 @@ export default function VideoPlayer({
   const selectedSubtitle =
     SUBTITLE_OPTIONS.find((option) => option.value === subtitleLanguage) ??
     SUBTITLE_OPTIONS[0];
+  const usesEmbeddedSubtitleControls = currentSource.name === "111Movies";
 
   const src = useMemo(
     () =>
@@ -531,8 +525,8 @@ export default function VideoPlayer({
       animate={{ opacity: 1 }}
       className={`group overflow-hidden border border-white/10 bg-black shadow-[0_28px_70px_rgba(0,0,0,0.45)] ${
         isFullscreen
-          ? "h-screen w-screen rounded-none"
-          : "rounded-xl md:rounded-[1.75rem]"
+          ? "relative h-screen w-screen rounded-none border-0 shadow-none"
+          : "flex flex-col rounded-xl md:rounded-[1.75rem]"
       }`}
     >
       <div
@@ -550,37 +544,16 @@ export default function VideoPlayer({
               <div className="flex flex-col items-center gap-4 px-6 text-center">
                 <div className="h-12 w-12 animate-spin rounded-full border-4 border-netflix-red border-t-transparent" />
                 <div className="space-y-1">
-                  <p className="text-sm text-white">Loading {currentSource.name}</p>
-                  {currentSource.supportsSubtitleLanguage ? (
-                    <p className="text-xs text-netflix-light-gray">
-                      Subtitle track: {selectedSubtitle.label}
-                    </p>
-                  ) : null}
+                  <p className="text-sm font-semibold text-white">
+                    Loading {currentSource.label}
+                  </p>
+                  <p className="text-xs text-netflix-light-gray">
+                    {currentSource.name}
+                  </p>
                 </div>
                 <p className="text-xs text-netflix-light-gray">
-                  Stream not responding? Try a different source:
+                  If this source stalls, switch servers below.
                 </p>
-                <div className="flex flex-wrap items-center justify-center gap-1.5">
-                  {SOURCE_PRIORITY.map((sourceId) => {
-                    const source = SOURCES[sourceId];
-
-                    return (
-                      <button
-                        key={source.name}
-                        type="button"
-                        onClick={() => switchSource(sourceId)}
-                        aria-pressed={sourceIndex === sourceId}
-                        className={`rounded-full px-3 py-1.5 text-[11px] font-semibold transition ${
-                          sourceIndex === sourceId
-                            ? "bg-white text-black"
-                            : "border border-white/15 bg-white/8 text-white/80 hover:bg-white/16 hover:text-white"
-                        }`}
-                      >
-                        {source.label}
-                      </button>
-                    );
-                  })}
-                </div>
               </div>
             </motion.div>
           ) : null}
@@ -598,71 +571,109 @@ export default function VideoPlayer({
           style={{ WebkitOverflowScrolling: "touch" }}
         />
 
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30 bg-gradient-to-t from-black/85 via-black/45 to-transparent p-3 opacity-100 transition-opacity duration-200 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
-          <div className="flex items-center justify-between gap-3">
-            <div className="pointer-events-auto flex min-w-0 items-center rounded-full border border-white/10 bg-black/70 p-1 shadow-[0_12px_30px_rgba(0,0,0,0.45)] backdrop-blur-md">
-              <button
-                type="button"
-                onClick={tryPreviousSource}
-                aria-label="Previous source"
-                title="Previous source"
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white/78 transition hover:bg-white/12 hover:text-white"
-              >
-                <FiChevronLeft size={18} />
-              </button>
-              <div className="min-w-0 px-2 text-center">
-                <p className="text-[11px] font-semibold uppercase leading-none text-white">
-                  {currentSource.label}
-                </p>
-                <p className="mt-1 max-w-[104px] truncate text-[10px] leading-none text-white/48 sm:max-w-[150px]">
-                  {currentSource.name}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={tryNextSource}
-                aria-label="Next source"
-                title="Next source"
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white/78 transition hover:bg-white/12 hover:text-white"
-              >
-                <FiChevronRight size={18} />
-              </button>
-            </div>
+      </div>
 
-            <div className="pointer-events-auto flex shrink-0 items-center gap-1 rounded-full border border-white/10 bg-black/70 p-1 shadow-[0_12px_30px_rgba(0,0,0,0.45)] backdrop-blur-md">
-              {currentSource.supportsSubtitleLanguage ? (
-                <button
-                  type="button"
-                  onClick={cycleSubtitleLanguage}
+      <div
+        className={`${
+          isFullscreen
+            ? "hidden"
+            : "shrink-0 border-t border-white/10 bg-[#080808] px-3 py-2"
+        }`}
+      >
+        <div
+          className={
+            isFullscreen
+              ? "flex items-center gap-1"
+              : "flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+          }
+        >
+          <div
+            className={`min-w-0 items-center gap-3 ${
+              isFullscreen ? "hidden" : "flex"
+            }`}
+          >
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase leading-none tracking-[0.18em] text-white/38">
+                Source
+              </p>
+              <p className="mt-1 truncate text-xs font-semibold text-white">
+                {currentSource.label} / {currentSource.name}
+              </p>
+            </div>
+            <label className="sr-only" htmlFor="video-source-select">
+              Video source
+            </label>
+            <select
+              id="video-source-select"
+              value={sourceIndex}
+              onChange={(event) => switchSource(Number(event.target.value))}
+              className="h-9 rounded-full border border-white/10 bg-white/8 px-3 text-xs font-semibold text-white outline-none transition hover:bg-white/12 focus:border-white/35"
+            >
+              {SOURCE_PRIORITY.map((sourceId) => {
+                const source = SOURCES[sourceId];
+
+                return (
+                  <option key={source.name} value={sourceId} className="bg-black">
+                    {source.label}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+
+          <div
+            className={`flex items-center gap-1 ${
+              isFullscreen ? "" : "self-end sm:self-auto"
+            }`}
+          >
+            {usesEmbeddedSubtitleControls ? (
+              <div
+                className="flex h-9 items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 text-xs font-semibold text-white/74"
+                title="Use the CC or settings button inside the video player."
+              >
+                <FiSettings size={16} />
+                <span className="hidden sm:inline">Audio/subtitles in player</span>
+              </div>
+            ) : currentSource.supportsSubtitleLanguage ? (
+              <div className="flex h-9 items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 text-xs font-semibold text-white/74 transition hover:bg-white/10 hover:text-white">
+                <FiType size={16} />
+                <label className="sr-only" htmlFor="subtitle-language-select">
+                  Subtitle language
+                </label>
+                <select
+                  id="subtitle-language-select"
+                  value={subtitleLanguage}
+                  onChange={(event) => setSubtitleLanguage(event.target.value)}
                   aria-label={`Subtitle language: ${selectedSubtitle.label}`}
                   title={`Subtitle language: ${selectedSubtitle.label}`}
-                  className="flex h-9 min-w-9 items-center justify-center gap-1 rounded-full px-2 text-white/78 transition hover:bg-white/12 hover:text-white"
+                  className="h-full max-w-24 bg-transparent text-xs font-semibold text-white outline-none"
                 >
-                  <FiType size={16} />
-                  <span className="text-[10px] font-semibold uppercase leading-none">
-                    {selectedSubtitle.value}
-                  </span>
-                </button>
-              ) : null}
-              <button
-                type="button"
-                onClick={reloadSource}
-                aria-label="Reload source"
-                title="Reload source"
-                className="flex h-9 w-9 items-center justify-center rounded-full text-white/78 transition hover:bg-white/12 hover:text-white"
-              >
-                <FiRefreshCw size={16} />
-              </button>
-              <button
-                type="button"
-                onClick={() => void toggleFullscreen()}
-                aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-                title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-black transition hover:bg-white/86"
-              >
-                {isFullscreen ? <FiMinimize2 size={16} /> : <FiMaximize2 size={16} />}
-              </button>
-            </div>
+                  {SUBTITLE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value} className="bg-black">
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
+            <button
+              type="button"
+              onClick={reloadSource}
+              aria-label="Reload source"
+              title="Reload source"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-white/74 transition hover:bg-white/10 hover:text-white"
+            >
+              <FiRefreshCw size={16} />
+            </button>
+            <button
+              type="button"
+              onClick={() => void toggleFullscreen()}
+              aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+              title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-black transition hover:bg-white/86"
+            >
+              {isFullscreen ? <FiMinimize2 size={16} /> : <FiMaximize2 size={16} />}
+            </button>
           </div>
         </div>
       </div>
