@@ -629,10 +629,10 @@ export default function VideoPlayer({
             {usesEmbeddedSubtitleControls ? (
               <div
                 className="flex h-9 items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 text-xs font-semibold text-white/74"
-                title="Use the CC or settings button inside the video player."
+                title="For Korean or English audio, open the audio/settings menu inside the embedded player."
               >
                 <FiSettings size={16} />
-                <span className="hidden sm:inline">Audio/subtitles in player</span>
+                <span className="hidden sm:inline">Audio: player settings</span>
               </div>
             ) : currentSource.supportsSubtitleLanguage ? (
               <div className="flex h-9 items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 text-xs font-semibold text-white/74 transition hover:bg-white/10 hover:text-white">
