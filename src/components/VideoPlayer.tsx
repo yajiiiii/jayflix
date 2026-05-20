@@ -2,6 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import {
+  FiChevronLeft,
+  FiChevronRight,
+  FiMaximize2,
+  FiMinimize2,
+  FiRefreshCw,
+  FiType,
+} from "react-icons/fi";
 
 interface VideoSource {
   buildMovieUrl: (options: VideoUrlOptions) => string;
@@ -39,7 +47,7 @@ interface VideoUrlOptions {
 const SOURCES: VideoSource[] = [
   {
     name: "VidSrc",
-    label: "Server 1",
+    label: "Server 7",
     domain: "https://vidsrc.xyz",
     supportsSubtitleLanguage: true,
     buildMovieUrl: ({ imdbId, tmdbId, subtitleLanguage, preferTmdb }) => {
@@ -65,7 +73,7 @@ const SOURCES: VideoSource[] = [
   },
   {
     name: "VidSrc.to",
-    label: "Server 2",
+    label: "Server 6",
     domain: "https://vidsrc.to",
     supportsSubtitleLanguage: true,
     buildMovieUrl: ({ imdbId, tmdbId, subtitleLanguage, preferTmdb }) => {
@@ -95,7 +103,7 @@ const SOURCES: VideoSource[] = [
   },
   {
     name: "111Movies",
-    label: "Server 3",
+    label: "Server 1",
     domain: "https://111movies.com",
     supportsSubtitleLanguage: false,
     buildMovieUrl: ({ tmdbId, imdbId, preferTmdb }) => {
@@ -117,17 +125,15 @@ const SOURCES: VideoSource[] = [
   },
   {
     name: "VidSrc CC",
-    label: "Server 4",
+    label: "Server 2",
     domain: "https://vidsrc.cc",
     supportsSubtitleLanguage: false,
-    buildMovieUrl: ({ imdbId, tmdbId, preferTmdb }) =>
-      preferTmdb && tmdbId
+    buildMovieUrl: ({ imdbId, tmdbId }) =>
+      tmdbId
         ? `https://vidsrc.cc/v3/embed/movie/${tmdbId}?autoPlay=true&poster=false`
         : imdbId
           ? `https://vidsrc.cc/v3/embed/movie/${imdbId}?autoPlay=true&poster=false`
-          : tmdbId
-            ? `https://vidsrc.cc/v3/embed/movie/${tmdbId}?autoPlay=true&poster=false`
-            : "",
+          : "",
     buildTvUrl: ({ imdbId, season, episode }) =>
       imdbId
         ? `https://vidsrc.cc/v3/embed/tv/${imdbId}/${season || 1}/${episode || 1}?autoPlay=true&poster=false`
@@ -135,7 +141,7 @@ const SOURCES: VideoSource[] = [
   },
   {
     name: "VidSrc Embed",
-    label: "Server 5",
+    label: "Server 4",
     domain: "https://vidsrc-embed.su",
     supportsSubtitleLanguage: true,
     buildMovieUrl: ({ imdbId, tmdbId, subtitleLanguage, preferTmdb }) => {
@@ -181,7 +187,7 @@ const SOURCES: VideoSource[] = [
   },
   {
     name: "Vsrc",
-    label: "Server 6",
+    label: "Server 5",
     domain: "https://vsrc.su",
     supportsSubtitleLanguage: true,
     buildMovieUrl: ({ imdbId, tmdbId, subtitleLanguage, preferTmdb }) => {
@@ -227,7 +233,7 @@ const SOURCES: VideoSource[] = [
   },
   {
     name: "VidSrc Mirror",
-    label: "Server 7",
+    label: "Server 3",
     domain: "https://vidsrcme.su",
     supportsSubtitleLanguage: true,
     buildMovieUrl: ({ imdbId, tmdbId, subtitleLanguage, preferTmdb }) => {
@@ -283,8 +289,22 @@ const SUBTITLE_OPTIONS: SubtitleOption[] = [
 ];
 
 const PLAYER_SUBTITLE_KEY = "netflix-clone-player-subtitle";
-const DEFAULT_SOURCE_INDEX = 0;
-const PLAYER_LOAD_TIMEOUT_MS = 10000;
+const PLAYER_LOAD_TIMEOUT_MS = 3500;
+const SOURCE_PRIORITY = [2, 3, 6, 4, 5, 1, 0];
+const DEFAULT_SOURCE_INDEX = SOURCE_PRIORITY[0] ?? 0;
+
+function getAdjacentSourceIndex(currentIndex: number, direction: 1 | -1): number {
+  const currentPriorityIndex = SOURCE_PRIORITY.indexOf(currentIndex);
+
+  if (currentPriorityIndex === -1) {
+    return DEFAULT_SOURCE_INDEX;
+  }
+
+  return SOURCE_PRIORITY[
+    (currentPriorityIndex + direction + SOURCE_PRIORITY.length) %
+      SOURCE_PRIORITY.length
+  ];
+}
 
 function buildPlayerUrl(
   source: VideoSource,
@@ -323,6 +343,7 @@ export default function VideoPlayer({
   const [reloadNonce, setReloadNonce] = useState(0);
   const [sourceIndex, setSourceIndex] = useState(DEFAULT_SOURCE_INDEX);
   const [subtitleLanguage, setSubtitleLanguage] = useState("auto");
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const playerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -369,11 +390,13 @@ export default function VideoPlayer({
   }, [reloadNonce, src]);
 
   const switchSource = useCallback((index: number) => {
+    setIsLoading(true);
     setSourceIndex(index);
   }, []);
 
   const tryNextSource = useCallback(() => {
-    setSourceIndex((index) => (index + 1) % SOURCES.length);
+    setIsLoading(true);
+    setSourceIndex((index) => getAdjacentSourceIndex(index, 1));
   }, []);
 
   useEffect(() => {
@@ -382,17 +405,18 @@ export default function VideoPlayer({
     }
 
     const timer = window.setTimeout(() => {
-      tryNextSource();
+      setIsLoading(false);
     }, PLAYER_LOAD_TIMEOUT_MS);
 
     return () => window.clearTimeout(timer);
-  }, [isLoading, src, tryNextSource]);
+  }, [isLoading, src]);
 
-  const tryPreviousSource = () => {
-    switchSource((sourceIndex - 1 + SOURCES.length) % SOURCES.length);
-  };
+  const tryPreviousSource = useCallback(() => {
+    setIsLoading(true);
+    setSourceIndex((index) => getAdjacentSourceIndex(index, -1));
+  }, []);
 
-  const cycleSubtitleLanguage = () => {
+  const cycleSubtitleLanguage = useCallback(() => {
     if (!currentSource.supportsSubtitleLanguage) {
       return;
     }
@@ -403,25 +427,39 @@ export default function VideoPlayer({
       SUBTITLE_OPTIONS.length;
 
     setSubtitleLanguage(SUBTITLE_OPTIONS[nextIndex]?.value || "auto");
-  };
+  }, [currentSource.supportsSubtitleLanguage, subtitleLanguage]);
 
-  const reloadSource = () => {
+  const reloadSource = useCallback(() => {
     setIsLoading(true);
     setReloadNonce((value) => value + 1);
-  };
+  }, []);
 
-  const toggleFullscreen = async () => {
+  const toggleFullscreen = useCallback(async () => {
     if (!playerRef.current) {
       return;
     }
 
-    if (document.fullscreenElement === playerRef.current) {
-      await document.exitFullscreen();
-      return;
-    }
+    try {
+      if (document.fullscreenElement === playerRef.current) {
+        await document.exitFullscreen();
+        return;
+      }
 
-    await playerRef.current.requestFullscreen();
-  };
+      await playerRef.current.requestFullscreen();
+    } catch {
+      setIsFullscreen(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(document.fullscreenElement === playerRef.current);
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () =>
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -468,7 +506,13 @@ export default function VideoPlayer({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [currentSource.supportsSubtitleLanguage, sourceIndex, subtitleLanguage]);
+  }, [
+    cycleSubtitleLanguage,
+    reloadSource,
+    toggleFullscreen,
+    tryNextSource,
+    tryPreviousSource,
+  ]);
 
   if (!src) {
     return (
@@ -485,9 +529,17 @@ export default function VideoPlayer({
       ref={playerRef}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="overflow-hidden rounded-xl md:rounded-[1.75rem] border border-white/10 bg-black shadow-[0_28px_70px_rgba(0,0,0,0.45)]"
+      className={`group overflow-hidden border border-white/10 bg-black shadow-[0_28px_70px_rgba(0,0,0,0.45)] ${
+        isFullscreen
+          ? "h-screen w-screen rounded-none"
+          : "rounded-xl md:rounded-[1.75rem]"
+      }`}
     >
-      <div className="relative aspect-video bg-black">
+      <div
+        className={`relative bg-black ${
+          isFullscreen ? "h-screen w-screen" : "aspect-video"
+        }`}
+      >
         <AnimatePresence>
           {isLoading ? (
             <motion.div
@@ -509,21 +561,25 @@ export default function VideoPlayer({
                   Stream not responding? Try a different source:
                 </p>
                 <div className="flex flex-wrap items-center justify-center gap-1.5">
-                  {SOURCES.map((source, index) => (
-                    <button
-                      key={source.name}
-                      type="button"
-                      onClick={() => switchSource(index)}
-                      aria-pressed={sourceIndex === index}
-                      className={`rounded-full px-3 py-1.5 text-[11px] font-semibold transition ${
-                        sourceIndex === index
-                          ? "bg-white text-black"
-                          : "border border-white/15 bg-white/8 text-white/80 hover:bg-white/16 hover:text-white"
-                      }`}
-                    >
-                      {source.label}
-                    </button>
-                  ))}
+                  {SOURCE_PRIORITY.map((sourceId) => {
+                    const source = SOURCES[sourceId];
+
+                    return (
+                      <button
+                        key={source.name}
+                        type="button"
+                        onClick={() => switchSource(sourceId)}
+                        aria-pressed={sourceIndex === sourceId}
+                        className={`rounded-full px-3 py-1.5 text-[11px] font-semibold transition ${
+                          sourceIndex === sourceId
+                            ? "bg-white text-black"
+                            : "border border-white/15 bg-white/8 text-white/80 hover:bg-white/16 hover:text-white"
+                        }`}
+                      >
+                        {source.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </motion.div>
@@ -536,10 +592,79 @@ export default function VideoPlayer({
           title={title}
           className="absolute inset-0 h-full w-full touch-manipulation"
           allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+          allowFullScreen
           onLoad={() => setIsLoading(false)}
           referrerPolicy="origin"
           style={{ WebkitOverflowScrolling: "touch" }}
         />
+
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30 bg-gradient-to-t from-black/85 via-black/45 to-transparent p-3 opacity-100 transition-opacity duration-200 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
+          <div className="flex items-center justify-between gap-3">
+            <div className="pointer-events-auto flex min-w-0 items-center rounded-full border border-white/10 bg-black/70 p-1 shadow-[0_12px_30px_rgba(0,0,0,0.45)] backdrop-blur-md">
+              <button
+                type="button"
+                onClick={tryPreviousSource}
+                aria-label="Previous source"
+                title="Previous source"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white/78 transition hover:bg-white/12 hover:text-white"
+              >
+                <FiChevronLeft size={18} />
+              </button>
+              <div className="min-w-0 px-2 text-center">
+                <p className="text-[11px] font-semibold uppercase leading-none text-white">
+                  {currentSource.label}
+                </p>
+                <p className="mt-1 max-w-[104px] truncate text-[10px] leading-none text-white/48 sm:max-w-[150px]">
+                  {currentSource.name}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={tryNextSource}
+                aria-label="Next source"
+                title="Next source"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white/78 transition hover:bg-white/12 hover:text-white"
+              >
+                <FiChevronRight size={18} />
+              </button>
+            </div>
+
+            <div className="pointer-events-auto flex shrink-0 items-center gap-1 rounded-full border border-white/10 bg-black/70 p-1 shadow-[0_12px_30px_rgba(0,0,0,0.45)] backdrop-blur-md">
+              {currentSource.supportsSubtitleLanguage ? (
+                <button
+                  type="button"
+                  onClick={cycleSubtitleLanguage}
+                  aria-label={`Subtitle language: ${selectedSubtitle.label}`}
+                  title={`Subtitle language: ${selectedSubtitle.label}`}
+                  className="flex h-9 min-w-9 items-center justify-center gap-1 rounded-full px-2 text-white/78 transition hover:bg-white/12 hover:text-white"
+                >
+                  <FiType size={16} />
+                  <span className="text-[10px] font-semibold uppercase leading-none">
+                    {selectedSubtitle.value}
+                  </span>
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={reloadSource}
+                aria-label="Reload source"
+                title="Reload source"
+                className="flex h-9 w-9 items-center justify-center rounded-full text-white/78 transition hover:bg-white/12 hover:text-white"
+              >
+                <FiRefreshCw size={16} />
+              </button>
+              <button
+                type="button"
+                onClick={() => void toggleFullscreen()}
+                aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+                title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-black transition hover:bg-white/86"
+              >
+                {isFullscreen ? <FiMinimize2 size={16} /> : <FiMaximize2 size={16} />}
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </motion.div>
   );
